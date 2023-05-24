@@ -17,40 +17,88 @@
     a. parse through OpenAI-GPT (custom prompts etc.)...
 */
 import { Configuration, OpenAIApi } from "openai";
-import fetch from "node-fetch";
+import fs from "fs";
 import express from "express";
+import dotenv from "dotenv";
+import nodemailer from "nodemailer";
+dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 8080;
 
-app.listen(port, () => {
-	console.log(`listening on port ${port}`);
-});
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.get("/", async (req, res) => {
+	console.log("parsing request...");
+	// res.send(req.body);
 	const configuration = new Configuration({
-		apiKey: process.env.OPENAI_API_KEY,
+		apiKey: process.env.keke,
 	});
 	const openai = new OpenAIApi(configuration);
 	const history = [];
-	const state = `you are an emailing client that takes in specific information and generate a concise, professional email that conveys all of the information present in the required message. the context of these messages is in the manufacturing niche`;
+
+	const state = `generate an email with this info below. start by saying "Dear Vendor,". please be concise but descriptive.`; // that take in specific information in the format of a JSON object and generate a concise, professional email that conveys all of the information present in the required message. the context of these messages is in the manufacturing niche. you are trying to ask for the best price and earliest date and method of shipment from vendors. generate this email how a manufacturing company sourcing supplies would generate an email. the message should start with "Dear Vendor,"`;
 	const messages = [];
+	const wowowgamingthesystem = "";
+	//! FIX...
+	const input = `${state}\n\n${JSON.stringify(req.body)}`;
+	//!
 
-	const user_input = `${state}\n\n${readlineSync.question("Your input: ")}`;
-	for (const [input_text, completion_text] of history) {
-		messages.push({ role: "user", content: input_text });
-		messages.push({ role: "assistant", content: completion_text });
-	}
-
-	messages.push({ role: "user", content: user_input });
+	messages.push({ role: "user", content: input });
 
 	try {
+		console.log("1");
+		console.log(input, req.body);
 		const completion = await openai.createChatCompletion({
 			model: "gpt-3.5-turbo",
-			messages: messages,
+			messages: [{ role: "user", content: input }],
 		});
-		const completion_text = completion.data.choices[0].message.content;
-		console.log(completion_text);
-		history.push([user_input, completion_text]);
+		console.log("2");
+		const completionText = completion.data.choices[0].message.content;
+		console.log(completionText);
+		history.push([input, completionText]);
+
+		//* EMAIL TEMPLATE
+		//* ADD LOOKUP FUNCTiONALITY...
+		let message = "";
+		const vendors = JSON.parse(fs.readFileSync("./vendors.json"));
+		for (let i = 0; i < vendors["vendor-names"].length; i++) {
+			const text = completionText.replace("Vendor", vendors["vendor-names"][i]);
+			// console.log(vendors["vendor-names"][i]);
+			message += text + "\n";
+
+			//! ******************************************************
+			//! ******************************************************
+			//! ******************************************************
+			var transporter = nodemailer.createTransport({
+				service: "gmail",
+				auth: {
+					//! ADD INTO .env VARIABLES AND LOAD HERE...
+					user: "burner.test.nova@gmail.com",
+					pass: "burner123",
+				},
+			});
+
+			var mailOptions = {
+				from: "burner.test.nova@gmail.com",
+				to: vendors["vendor-emails"][i],
+				subject: "Order Request | Jesse @BetterCNC",
+				text: text,
+			};
+
+			transporter.sendMail(mailOptions, function (error, info) {
+				if (error) {
+					console.log(error);
+				} else {
+					console.log("Email sent: " + info.response);
+				}
+			});
+			//! ******************************************************
+			//! ******************************************************
+			//! ******************************************************
+		}
+		res.send(`<p>${message}</p>`);
 	} catch (error) {
 		if (error.response) {
 			console.log(error.response.status);
@@ -58,12 +106,25 @@ app.get("/", async (req, res) => {
 		} else {
 			console.log(error.message);
 		}
+		res.end();
 	}
 });
 
+app.listen(port, () => {
+	console.log(`listening on port:${port}`);
+});
+
 //! use links to fetch content...
-/* ! @deprecated
+/* @deprecated
 fetch("http://127.0.0.1:5500/input.json")
 	.then((response) => response.json())
 	.then((json) => console.log(json));
+*/
+
+/* @deprecated
+app.get("/testget", (req, res) => {
+	res.send("<h3>started nova>...<h3>");
+
+	console.log(req.body);
+});
 */

@@ -1,4 +1,6 @@
 {
+  "my-name": "Jesse",
+  "my-company-name": "BetterCNC",
   "orderItems": [
     {
       "material": "316 SS",
