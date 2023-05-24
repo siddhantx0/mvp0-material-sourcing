@@ -1,0 +1,16 @@
+{
+  "orderItems": [
+    {
+      "material": "316 SS",
+      "dimensions": "0.625 x 2.5 x 72",
+      "specifications": "Cond. A per AMS5648",
+      "quantity": 2
+    },
+    {
+      "material": "316SS",
+      "dimensions": "0.50 x 2.50 x 60",
+      "specifications": "Cond. A per AMS5648",
+      "quantity": 2
+    }
+  ]
+}
